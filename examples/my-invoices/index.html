@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Invoices</title>
+<script src="https://iavica.com/sdk/v1/iavica.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1f;--mut:#6b6b70;--line:#e4e2dc;--acc:#1f4fd1;--acc2:#e8f0ff;--danger:#c0392b}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0 12px 0 0}
+  nav{display:flex;gap:6px;flex-wrap:wrap}
+  nav button{background:none;border:1px solid transparent;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--mut)}
+  nav button.on{background:var(--acc2);color:var(--acc);font-weight:600}
+  main{max-width:1050px;margin:0 auto;padding:20px 16px 40px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  h2{font-size:17px;margin:0 0 14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:4px;flex:1;min-width:140px}
+  input,select,textarea{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  textarea{min-height:60px}
+  button.btn{font:inherit;font-size:14px;padding:9px 16px;border-radius:8px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer}
+  button.sec{background:#fff;color:var(--acc)}
+  button.del{background:#fff;color:var(--danger);border-color:var(--line)}
+  button.sm{padding:5px 10px;font-size:13px}
+  button:disabled{opacity:.5;cursor:default}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  td.num,th.num{text-align:right}
+  .acts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+  .empty{color:var(--mut);padding:14px 0}
+  .tot{display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-top:12px;font-size:14px}
+  .tot b{font-size:18px}
+  .badge{font-size:12px;padding:3px 8px;border-radius:20px;background:#eee}
+  .badge.paid{background:#e3f6e8;color:#1e7a3a}.badge.pending{background:#fff3dc;color:#8a5a00}
+  .tablewrap{overflow-x:auto}
+  th[data-s]{cursor:pointer;user-select:none;white-space:nowrap}
+  th[data-s]:hover{color:var(--acc)}
+  th[data-s] .ar{display:inline-block;width:12px;margin-left:3px;color:var(--acc)}
+  .lines td input{width:100%;min-width:60px}
+  #status{font-size:13px;color:var(--mut);margin-left:auto}
+  footer{max-width:1050px;margin:0 auto;padding:10px 16px 30px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mut)}
+  footer button{font:inherit;font-size:13px;background:none;border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}
+  .hidden{display:none}
+  .mobile-only{display:none}
+  @media (max-width:640px){
+    header{padding:12px 16px}
+    main{padding:16px 12px 30px}
+    .card{padding:14px}
+    .mobile-only{display:block}
+    table.cards thead{display:none}
+    table.cards, table.cards tbody{display:block}
+    table.cards tr{display:block;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:10px;background:#fff}
+    table.cards td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:none;padding:5px 0;text-align:right}
+    table.cards td::before{content:attr(data-l);color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.03em;text-align:left;flex-shrink:0}
+    table.cards td.ac{justify-content:flex-end;padding-top:8px}
+    table.cards td.ac::before,table.cards td.empty::before{content:none}
+    table.cards td.empty{display:block;text-align:left}
+    table.cards tr:has(td.empty){border:none;padding:0}
+    table.cards td input{width:60%;min-width:0}
+    table.cards td.first{font-size:15px}
+  }
+  .msg{padding:10px 12px;border-radius:8px;background:#fdecea;color:var(--danger);margin-bottom:12px;font-size:14px}
+  .info{padding:10px 12px;border-radius:8px;background:var(--acc2);color:var(--acc);margin-bottom:16px;font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧾 My Invoices</h1>
+  <nav id="nav">
+    <button data-v="invoices" class="on">Invoices</button>
+    <button data-v="clients">Clients</button>
+    <button data-v="products">Products</button>
+    <button data-v="company">My details</button>
+  </nav>
+  <span id="status">Connecting…</span>
+</header>
+
+<main>
+  <div id="err" class="msg hidden"></div>
+  <div id="demoBanner" class="info hidden">
+    <span>👋 This is a demo with sample data. Try anything: edit, create, download PDFs.</span>
+    <span class="acts"><button class="btn sec sm" id="bResetDemo" type="button">Reset sample data</button><button class="btn sec sm" id="bClearDemo" type="button">Delete sample data</button></span>
+  </div>
+
+  <!-- INVOICES -->
+  <section id="v-invoices">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">Invoices</h2>
+        <button class="btn" id="bNew" type="button">+ New invoice</button>
+      </div>
+      <input id="fSearch" type="search" placeholder="🔍 Search by number, client, date, amount or status…" style="width:100%;margin-bottom:10px">
+      <select id="fSort" class="mobile-only" style="width:100%;margin-bottom:10px"><option value="date:-1">Newest first</option><option value="date:1">Oldest first</option><option value="number:-1">Number</option><option value="client:1">Client (A–Z)</option><option value="total:-1">Highest total</option><option value="total:1">Lowest total</option><option value="status:1">Status</option></select>
+      <div class="tablewrap"><table class="cards">
+        <thead id="hInvoices"><tr><th data-s="number">Number</th><th data-s="date">Date</th><th data-s="client">Client</th><th class="num" data-s="total">Total</th><th data-s="status">Status</th><th></th></tr></thead>
+        <tbody id="tInvoices"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- NEW / EDIT INVOICE -->
+  <section id="v-edit" class="hidden">
+    <div class="card">
+      <h2 id="invTitle">New invoice</h2>
+      <div class="row">
+        <label>Number<input id="iNum"></label>
+        <label>Date<input id="iDate" type="date"></label>
+        <label>Due date<input id="iDue" type="date"></label>
+        <label style="flex:2">Client<select id="iClient"></select></label>
+        <label>Status<select id="iStatus"><option value="pending">Pending</option><option value="paid">Paid</option></select></label>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Items</h2>
+      <div class="row" style="margin-bottom:12px">
+        <label style="flex:3">Add product<select id="iProd"></select></label>
+        <button class="btn sec" id="bAddProd" type="button">Add</button>
+        <button class="btn sec" id="bAddLine" type="button">Custom line</button>
+      </div>
+      <div class="tablewrap"><table class="lines cards">
+        <thead><tr><th style="width:40%">Description</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Tax %</th><th class="num">Amount</th><th></th></tr></thead>
+        <tbody id="tLines"></tbody>
+      </table></div>
+      <div class="tot" id="iTot"></div>
+      <label style="margin-top:12px">Notes<textarea id="iNotes" placeholder="Payment terms, bank details, etc."></textarea></label>
+      <div class="row" style="margin-top:14px;justify-content:flex-end">
+        <button class="btn sec" id="bCancelInv" type="button">Cancel</button>
+        <button class="btn" id="bSaveInv" type="button">Save invoice</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLIENTS -->
+  <section id="v-clients" class="hidden">
+    <div class="card">
+      <h2 id="cTitle">New client</h2>
+      <div class="row">
+        <label style="flex:2">Name or company<input id="cName"></label>
+        <label>EIN / Tax ID<input id="cTax"></label>
+        <label>Email<input id="cEmail" type="email"></label>
+        <label>Phone<input id="cPhone"></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label style="flex:3">Address<input id="cAddr"></label>
+        <button class="btn sec hidden" id="bCancelCli" type="button">Cancel</button>
+        <button class="btn" id="bSaveCli" type="button">Save client</button>
+      </div>
+    </div>
+    <div class="card"><div class="tablewrap"><table class="cards">
+      <thead><tr><th>Name</th><th>EIN</th><th>Email</th><th>Phone</th><th></th></tr></thead>
+      <tbody id="tClients"></tbody>
+    </table></div></div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section id="v-products" class="hidden">
+    <div class="card">
+      <h2 id="pTitle">New product or service</h2>
+      <div class="row">
+        <label style="flex:3">Name<input id="pName"></label>
+        <label>Price (before tax)<input id="pPrice" type="number" step="0.01" min="0"></label>
+        <label>Sales tax %<input id="pVat" type="number" step="0.001" min="0" value="8.25"></label>
+        <button class="btn sec hidden" id="bCancelProd" type="button">Cancel</button>
+        <button class="btn" id="bSaveProd" type="button">Save product</button>
+      </div>
+    </div>
+    <div class="card"><div class="tablewrap"><table class="cards">
+      <thead><tr><th>Name</th><th class="num">Price</th><th class="num">Tax</th><th></th></tr></thead>
+      <tbody id="tProducts"></tbody>
+    </table></div></div>
+  </section>
+
+  <!-- MY DETAILS -->
+  <section id="v-company" class="hidden">
+    <div class="card">
+      <h2>My details (shown on invoices)</h2>
+      <div class="row">
+        <label style="flex:2">Name or company<input id="eName"></label>
+        <label>EIN / Tax ID<input id="eTax"></label>
+        <label>Email<input id="eEmail"></label>
+        <label>Phone<input id="ePhone"></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label style="flex:2">Address<input id="eAddr"></label>
+        <label>Invoice prefix<input id="ePref" placeholder="INV-"></label>
+        <label>Currency<select id="eCur"><option>USD</option><option>EUR</option><option>GBP</option></select></label>
+        <button class="btn" id="bSaveCo" type="button">Save</button>
+      </div>
+      <div class="row" style="margin-top:18px;align-items:center">
+        <span style="font-size:14px;color:var(--mut)">Want to see the app with example data?</span>
+        <button class="btn sec" id="bResetDemo2" type="button">Reset sample data</button>
+      </div>
+      <div class="row" id="inviteRow" style="margin-top:18px;display:none">
+        <span style="font-size:14px;color:var(--mut)">Want someone else to use the app with your data?</span>
+        <button class="btn sec" id="bInvite" type="button">Invite</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>Persistent data with <a href="https://iavica.com" style="color:#e8421a" target="_blank" rel="noopener">iavica</a></span>
+  <button id="logout" type="button">Log out</button>
+</footer>
+
+<script>
+// iavica: this appId links the app to the user's saved data. Never change it, and never
+// rename saved fields or collections without migrating them: https://iavica.com/ai#data-model
+const db = Iavica.connect({
+  appId: 'cd1d41e9-3368-4f06-ae29-95357c93cafe',
+  appName: 'My Invoices',
+  locale: 'en'
+});
+const C = {
+  clients: db.collection('clients'),
+  products: db.collection('products'),
+  invoices: db.collection('invoices'),
+  settings: db.collection('settings')
+};
+const S = { clients: [], products: [], invoices: [], settings: null };
+let editCli = null, editProd = null, editInv = null, lines = [];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isoDay = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+const today = () => isoDay(new Date());
+const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return isoDay(d); };
+const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
+const r2 = n => Math.round(n * 100) / 100;
+const co = () => (S.settings && S.settings.data) || {};
+const money = n => new Intl.NumberFormat('en-US', { style: 'currency', currency: co().currency || 'USD' }).format(n || 0);
+const fdate = d => { if (!d) return ''; const [y, m, dd] = d.split('-'); return `${m}/${dd}/${y}`; };
+const cliById = id => S.clients.find(c => c.id === id);
+
+function showErr(e) {
+  console.error(e);
+  const box = $('err');
+  let m = 'Something went wrong. Please try again.';
+  if (e && e.status === 409) m = 'This was changed somewhere else. I have reloaded it; please repeat your change.';
+  else if (e && e.status === 403) m = 'You do not have permission to do this.';
+  else if (e && e.status === 429) m = 'Too many actions in a row. Please wait a few seconds.';
+  box.textContent = m; box.classList.remove('hidden');
+  setTimeout(() => box.classList.add('hidden'), 6000);
+  if (e && e.status === 409) loadAll().catch(() => {});
+}
+async function run(btn, fn) {
+  if (btn) btn.disabled = true;
+  try { await fn(); } catch (e) { showErr(e); } finally { if (btn) btn.disabled = false; }
+}
+
+/* ---------- navigation ---------- */
+function show(v) {
+  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'v-' + v));
+  const tab = v === 'edit' ? 'invoices' : v;
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === tab));
+}
+$('nav').addEventListener('click', e => {
+  const v = e.target.dataset && e.target.dataset.v; if (!v) return;
+  show(v);
+});
+$('bNew').onclick = () => { startInvoice(null); show('edit'); };
+
+/* ---------- loading ---------- */
+async function loadAll() {
+  const [cl, pr, inv, st] = await Promise.all([C.clients.listAll(), C.products.listAll(), C.invoices.listAll(), C.settings.listAll()]);
+  S.clients = cl.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || ''));
+  S.products = pr.sort((a, b) => (a.data.name || '').localeCompare(b.data.name || ''));
+  S.invoices = inv;
+  S.settings = st[0] || null;
+  renderAll();
+}
+function renderAll() {
+  renderClients(); renderProducts(); renderInvoices(); renderCompany(); fillSelects();
+  $('demoBanner').classList.toggle('hidden', !(co().demo || S.clients.some(c => c.data.demo) || S.products.some(p => p.data.demo) || S.invoices.some(f => f.data.demo)));
+}
+
+/* ---------- demo data ---------- */
+async function seedDemo(run) {
+  const company = { name: 'Brightside Studio LLC', tax: '74-1234567', email: 'hello@brightside.example', phone: '(512) 555-0100', addr: '1200 Congress Ave, Suite 300, Austin, TX 78701', prefix: 'INV-', currency: 'USD', demo: true };
+  const clients = [
+    { name: 'Acme Robotics Inc.', tax: '74-9876543', email: 'accounts@acme.example', phone: '(512) 555-0101', addr: '4500 Riverside Dr, Austin, TX 78741' },
+    { name: 'Green Leaf Café', tax: '74-5551212', email: 'finance@greenleaf.example', phone: '(210) 555-0199', addr: '88 Alamo Plaza, San Antonio, TX 78205' },
+    { name: 'Northwind Logistics', tax: '75-2468101', email: 'ap@northwind.example', phone: '(214) 555-0142', addr: '700 Commerce St, Dallas, TX 75202' },
+    { name: 'Lumen Health Clinic', tax: '76-3141592', email: 'billing@lumen.example', phone: '(713) 555-0177', addr: '2100 Main St, Houston, TX 77002' }
+  ];
+  const products = [
+    { name: 'Website design', price: 2400, vat: 8.25 },
+    { name: 'Logo & brand identity', price: 1250, vat: 8.25 },
+    { name: 'Monthly maintenance', price: 150, vat: 8.25 },
+    { name: 'Consulting (hour)', price: 110, vat: 8.25 },
+    { name: 'Photography session', price: 500, vat: 8.25 },
+    { name: 'Hosting (1 year)', price: 300, vat: 8.25 }
+  ];
+  const y = new Date().getFullYear();
+  const L = (p, qty) => ({ desc: products[p].name, qty, price: products[p].price, vat: products[p].vat });
+  const invoices = [
+    { c: 0, date: daysAgo(75), status: 'paid', lines: [L(0, 1), L(5, 1)], notes: 'Thank you for your business!' },
+    { c: 1, date: daysAgo(60), status: 'paid', lines: [L(1, 1), L(4, 1)], notes: '' },
+    { c: 2, date: daysAgo(41), status: 'paid', lines: [L(3, 12)], notes: 'Workshop on delivery tracking.' },
+    { c: 0, date: daysAgo(30), status: 'paid', lines: [L(2, 1)], notes: '' },
+    { c: 3, date: daysAgo(18), status: 'pending', lines: [L(0, 1), L(2, 3), L(5, 1)], notes: 'Payment due within 30 days by ACH or check.' },
+    { c: 1, date: daysAgo(9), status: 'pending', lines: [L(3, 6), L(4, 2)], notes: '' },
+    { c: 2, date: daysAgo(2), status: 'pending', lines: [L(2, 1), L(3, 2)], notes: 'Payment due within 30 days by ACH or check.' }
+  ];
+  if (S.settings) await C.settings.update(S.settings.id, company, { version: S.settings.version });
+  else await C.settings.add(company, { idempotencyKey: 'settings:company' });
+  const pre = `demo:${run}:`;
+  const startAt = S.invoices.reduce((m, f) => { const n = f.data.number || ''; return n.startsWith(`INV-${y}-`) ? Math.max(m, parseInt(n.slice(9), 10) || 0) : m; }, 0);
+  const cRecs = [];
+  for (let i = 0; i < clients.length; i++) cRecs.push(await C.clients.add({ ...clients[i], demo: true }, { idempotencyKey: pre + 'client:' + i }));
+  for (let i = 0; i < products.length; i++) await C.products.add({ ...products[i], demo: true }, { idempotencyKey: pre + 'product:' + i });
+  for (let i = 0; i < invoices.length; i++) {
+    const v = invoices[i], cr = cRecs[v.c];
+    const due = new Date(v.date); due.setDate(due.getDate() + 30);
+    await C.invoices.add({
+      number: `INV-${y}-${String(startAt + i + 1).padStart(4, '0')}`, date: v.date, due: isoDay(due), status: v.status, notes: v.notes,
+      clientId: cr.id, client: { ...clients[v.c] }, issuer: { ...company }, lines: v.lines, demo: true
+    }, { idempotencyKey: pre + 'invoice:' + i });
+  }
+}
+async function removeDemoRecords() {
+  for (const f of S.invoices.filter(x => x.data.demo)) await C.invoices.remove(f.id, { version: f.version });
+  for (const c of S.clients.filter(x => x.data.demo)) await C.clients.remove(c.id, { version: c.version });
+  for (const p of S.products.filter(x => x.data.demo)) await C.products.remove(p.id, { version: p.version });
+}
+async function resetDemo(btn) {
+  await run(btn, async () => {
+    if (!confirm('Load fresh sample data? Old sample data is replaced, and “My details” are set to the sample company. Clients, products and invoices you created yourself stay.')) return;
+    $('status').textContent = 'Loading sample data…';
+    await removeDemoRecords();
+    await loadAll();
+    await seedDemo('r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+    await loadAll();
+    show('invoices');
+  });
+  $('status').textContent = 'Connected';
+}
+$('bResetDemo').onclick = () => resetDemo($('bResetDemo'));
+$('bResetDemo2').onclick = () => resetDemo($('bResetDemo2'));
+$('bClearDemo').onclick = () => run($('bClearDemo'), async () => {
+  if (!confirm('Delete all sample data (company, clients, products and invoices)? Anything you created yourself stays.')) return;
+  await removeDemoRecords();
+  if (S.settings && S.settings.data.demo) {
+    await C.settings.update(S.settings.id, { name: 'Your Company Name', tax: '', email: 'you@example.com', phone: '', addr: 'Your address', prefix: 'INV-', currency: 'USD', demo: false }, { version: S.settings.version });
+  }
+  await loadAll();
+  show('company');
+  alert('Sample data deleted. Now enter your own company details.');
+});
+
+/* ---------- clients ---------- */
+function renderClients() {
+  const t = $('tClients');
+  if (!S.clients.length) { t.innerHTML = '<tr><td colspan="5" class="empty">No clients yet.</td></tr>'; return; }
+  t.innerHTML = S.clients.map(c => `<tr><td class="first" data-l="Name"><b>${esc(c.data.name)}</b></td><td data-l="EIN">${esc(c.data.tax)}</td><td data-l="Email">${esc(c.data.email)}</td><td data-l="Phone">${esc(c.data.phone)}</td>
+    <td class="ac"><div class="acts"><button class="btn sec sm" data-ed="${c.id}">Edit</button><button class="btn del sm" data-rm="${c.id}">Delete</button></div></td></tr>`).join('');
+}
+function cliForm(c) {
+  editCli = c;
+  const d = (c && c.data) || {};
+  $('cName').value = d.name || ''; $('cTax').value = d.tax || ''; $('cEmail').value = d.email || ''; $('cPhone').value = d.phone || ''; $('cAddr').value = d.addr || '';
+  $('cTitle').textContent = c ? 'Edit client' : 'New client';
+  $('bCancelCli').classList.toggle('hidden', !c);
+}
+$('bSaveCli').onclick = () => run($('bSaveCli'), async () => {
+  const data = { name: $('cName').value.trim(), tax: $('cTax').value.trim(), email: $('cEmail').value.trim(), phone: $('cPhone').value.trim(), addr: $('cAddr').value.trim() };
+  if (!data.name) { alert('Please enter the client name.'); return; }
+  if (editCli) await C.clients.update(editCli.id, { ...editCli.data, ...data }, { version: editCli.version });
+  else await C.clients.add(data);
+  cliForm(null); await loadAll();
+});
+$('bCancelCli').onclick = () => cliForm(null);
+$('tClients').onclick = e => {
+  const ed = e.target.dataset.ed, rm = e.target.dataset.rm;
+  if (ed) { cliForm(cliById(ed)); window.scrollTo(0, 0); }
+  if (rm) run(e.target, async () => {
+    const c = cliById(rm);
+    if (S.invoices.some(f => f.data.clientId === rm) && !confirm('This client has invoices. The invoices will be kept. Delete anyway?')) return;
+    if (!confirm('Delete ' + c.data.name + '?')) return;
+    await C.clients.remove(c.id, { version: c.version }); await loadAll();
+  });
+};
+
+/* ---------- products ---------- */
+function renderProducts() {
+  const t = $('tProducts');
+  if (!S.products.length) { t.innerHTML = '<tr><td colspan="4" class="empty">No products yet.</td></tr>'; return; }
+  t.innerHTML = S.products.map(p => `<tr><td class="first" data-l="Name"><b>${esc(p.data.name)}</b></td><td class="num" data-l="Price">${money(p.data.price)}</td><td class="num" data-l="Tax">${esc(p.data.vat)} %</td>
+    <td class="ac"><div class="acts"><button class="btn sec sm" data-ed="${p.id}">Edit</button><button class="btn del sm" data-rm="${p.id}">Delete</button></div></td></tr>`).join('');
+}
+function prodForm(p) {
+  editProd = p;
+  const d = (p && p.data) || {};
+  $('pName').value = d.name || ''; $('pPrice').value = d.price ?? ''; $('pVat').value = d.vat ?? 8.25;
+  $('pTitle').textContent = p ? 'Edit product' : 'New product or service';
+  $('bCancelProd').classList.toggle('hidden', !p);
+}
+$('bSaveProd').onclick = () => run($('bSaveProd'), async () => {
+  const data = { name: $('pName').value.trim(), price: r2(num($('pPrice').value)), vat: num($('pVat').value) };
+  if (!data.name) { alert('Please enter the product name.'); return; }
+  if (editProd) await C.products.update(editProd.id, { ...editProd.data, ...data }, { version: editProd.version });
+  else await C.products.add(data);
+  prodForm(null); await loadAll();
+});
+$('bCancelProd').onclick = () => prodForm(null);
+$('tProducts').onclick = e => {
+  const ed = e.target.dataset.ed, rm = e.target.dataset.rm;
+  if (ed) { prodForm(S.products.find(p => p.id === ed)); window.scrollTo(0, 0); }
+  if (rm) run(e.target, async () => {
+    const p = S.products.find(x => x.id === rm);
+    if (!confirm('Delete ' + p.data.name + '?')) return;
+    await C.products.remove(p.id, { version: p.version }); await loadAll();
+  });
+};
+
+/* ---------- my details ---------- */
+function renderCompany() {
+  const d = co();
+  $('eName').value = d.name || ''; $('eTax').value = d.tax || ''; $('eEmail').value = d.email || ''; $('ePhone').value = d.phone || '';
+  $('eAddr').value = d.addr || ''; $('ePref').value = d.prefix ?? 'INV-'; $('eCur').value = d.currency || 'USD';
+}
+$('bSaveCo').onclick = () => run($('bSaveCo'), async () => {
+  const data = { name: $('eName').value.trim(), tax: $('eTax').value.trim(), email: $('eEmail').value.trim(), phone: $('ePhone').value.trim(), addr: $('eAddr').value.trim(), prefix: $('ePref').value, currency: $('eCur').value };
+  if (S.settings) await C.settings.update(S.settings.id, { ...S.settings.data, ...data }, { version: S.settings.version });
+  else await C.settings.add(data, { idempotencyKey: 'settings:company' });
+  await loadAll(); alert('Details saved.');
+});
+$('bInvite').onclick = () => run($('bInvite'), async () => {
+  const email = prompt('Email of the person you want to invite:');
+  if (!email) return;
+  await db.invite(email.trim());
+  alert('Invitation sent to ' + email.trim() + '.');
+});
+
+/* ---------- invoices ---------- */
+function totals(ls) {
+  let base = 0, vat = 0;
+  for (const l of ls) { const amt = num(l.qty) * num(l.price); base += amt; vat += amt * num(l.vat) / 100; }
+  return { base: r2(base), vat: r2(vat), total: r2(base + vat) };
+}
+function nextNumber() {
+  const pref = co().prefix ?? 'INV-';
+  const start = pref + new Date().getFullYear() + '-';
+  let max = 0;
+  for (const f of S.invoices) {
+    const n = f.data.number || '';
+    if (n.startsWith(start)) max = Math.max(max, parseInt(n.slice(start.length), 10) || 0);
+  }
+  return start + String(max + 1).padStart(4, '0');
+}
+let sortKey = 'date', sortDir = -1;
+const sortVal = (f, k) => k === 'total' ? totals(f.data.lines || []).total : k === 'client' ? (f.data.client?.name || '').toLowerCase() : String(f.data[k] || '').toLowerCase();
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const statusLabel = s => s === 'paid' ? 'Paid' : 'Pending';
+function renderInvoices() {
+  const q = norm($('fSearch').value.trim());
+  const t = $('tInvoices');
+  document.querySelectorAll('#hInvoices th[data-s]').forEach(th => {
+    const lbl = th.textContent.replace(/[▲▼]/g, '').trim();
+    th.innerHTML = esc(lbl) + '<span class="ar">' + (th.dataset.s === sortKey ? (sortDir > 0 ? '▲' : '▼') : '') + '</span>';
+  });
+  const list = S.invoices.filter(f => {
+    if (!q) return true;
+    const d = f.data, tot = totals(d.lines || []).total;
+    return norm([d.number, d.client?.name, d.client?.tax, fdate(d.date), statusLabel(d.status), money(tot), tot, (d.lines || []).map(l => l.desc).join(' ')].join(' ')).includes(q);
+  }).sort((a, b) => {
+    const x = sortVal(a, sortKey), y = sortVal(b, sortKey);
+    const c = typeof x === 'number' ? x - y : x.localeCompare(y, 'en', { numeric: true });
+    return (c || (a.data.number || '').localeCompare(b.data.number || '', 'en', { numeric: true })) * sortDir;
+  });
+  if (!list.length) { t.innerHTML = `<tr><td colspan="6" class="empty">${S.invoices.length ? 'No results.' : 'No invoices yet. Click “+ New invoice”.'}</td></tr>`; return; }
+  t.innerHTML = list.map(f => {
+    const d = f.data, tot = totals(d.lines || []);
+    return `<tr><td class="first" data-l="Number"><b>${esc(d.number)}</b></td><td data-l="Date">${fdate(d.date)}</td><td data-l="Client">${esc(d.client?.name)}</td><td class="num" data-l="Total"><b>${money(tot.total)}</b></td>
+      <td data-l="Status"><span class="badge ${esc(d.status)}">${statusLabel(d.status)}</span></td>
+      <td class="ac"><div class="acts"><button class="btn sm" data-pdf="${f.id}">PDF</button><button class="btn sec sm" data-ed="${f.id}">Edit</button><button class="btn del sm" data-rm="${f.id}">Delete</button></div></td></tr>`;
+  }).join('');
+}
+$('fSearch').oninput = renderInvoices;
+$('hInvoices').onclick = e => {
+  const th = e.target.closest('th[data-s]'); if (!th) return;
+  if (sortKey === th.dataset.s) sortDir = -sortDir; else { sortKey = th.dataset.s; sortDir = ['date', 'total', 'number'].includes(sortKey) ? -1 : 1; }
+  renderInvoices();
+};
+$('fSort').onchange = e => { const [k, d] = e.target.value.split(':'); sortKey = k; sortDir = +d; renderInvoices(); };
+$('tInvoices').onclick = e => {
+  const ds = e.target.dataset; const f = S.invoices.find(x => x.id === (ds.pdf || ds.ed || ds.rm));
+  if (!f) return;
+  if (ds.pdf) pdf(f.data);
+  if (ds.ed) { startInvoice(f); show('edit'); }
+  if (ds.rm) run(e.target, async () => {
+    if (!confirm('Delete invoice ' + f.data.number + '?')) return;
+    await C.invoices.remove(f.id, { version: f.version }); await loadAll();
+  });
+};
+function fillSelects() {
+  const cur = $('iClient').value;
+  $('iClient').innerHTML = '<option value="">— Choose a client —</option>' + S.clients.map(c => `<option value="${c.id}">${esc(c.data.name)}</option>`).join('');
+  $('iClient').value = cur;
+  $('iProd').innerHTML = S.products.length ? S.products.map(p => `<option value="${p.id}">${esc(p.data.name)} — ${money(p.data.price)}</option>`).join('') : '<option value="">(no products)</option>';
+}
+function startInvoice(f) {
+  editInv = f;
+  const d = (f && f.data) || {};
+  $('invTitle').textContent = f ? 'Edit invoice ' + d.number : 'New invoice';
+  $('iNum').value = d.number || nextNumber();
+  $('iDate').value = d.date || today();
+  $('iDue').value = d.due || '';
+  fillSelects();
+  $('iClient').value = d.clientId && cliById(d.clientId) ? d.clientId : '';
+  $('iStatus').value = d.status || 'pending';
+  $('iNotes').value = d.notes || '';
+  lines = (d.lines || []).map(l => ({ ...l }));
+  renderLines();
+}
+function renderLines() {
+  const t = $('tLines');
+  if (!lines.length) t.innerHTML = '<tr><td colspan="6" class="empty">Add products or custom lines.</td></tr>';
+  else t.innerHTML = lines.map((l, i) => `<tr>
+    <td data-l="Description"><input data-i="${i}" data-k="desc" value="${esc(l.desc)}"></td>
+    <td data-l="Qty"><input data-i="${i}" data-k="qty" type="number" step="0.01" value="${esc(l.qty)}" style="text-align:right"></td>
+    <td data-l="Price"><input data-i="${i}" data-k="price" type="number" step="0.01" value="${esc(l.price)}" style="text-align:right"></td>
+    <td data-l="Tax %"><input data-i="${i}" data-k="vat" type="number" step="0.01" value="${esc(l.vat)}" style="text-align:right"></td>
+    <td class="num" data-l="Amount" id="amt${i}">${money(num(l.qty) * num(l.price))}</td>
+    <td class="ac"><button class="btn del sm" data-x="${i}">✕ Remove</button></td></tr>`).join('');
+  renderTot();
+}
+function renderTot() {
+  const t = totals(lines);
+  $('iTot').innerHTML = `<span>Subtotal: ${money(t.base)}</span><span>Sales tax: ${money(t.vat)}</span><b>Total: ${money(t.total)}</b>`;
+}
+$('tLines').oninput = e => {
+  const i = e.target.dataset.i, k = e.target.dataset.k; if (i === undefined) return;
+  lines[i][k] = k === 'desc' ? e.target.value : num(e.target.value);
+  $('amt' + i).textContent = money(num(lines[i].qty) * num(lines[i].price));
+  renderTot();
+};
+$('tLines').onclick = e => { const x = e.target.dataset.x; if (x !== undefined) { lines.splice(+x, 1); renderLines(); } };
+$('bAddProd').onclick = () => {
+  const p = S.products.find(x => x.id === $('iProd').value);
+  if (!p) { alert('First create products in the “Products” tab.'); return; }
+  lines.push({ desc: p.data.name, qty: 1, price: p.data.price, vat: p.data.vat }); renderLines();
+};
+$('bAddLine').onclick = () => { lines.push({ desc: '', qty: 1, price: 0, vat: 8.25 }); renderLines(); };
+$('bCancelInv').onclick = () => show('invoices');
+$('bSaveInv').onclick = () => run($('bSaveInv'), async () => {
+  const c = cliById($('iClient').value);
+  if (!c) { alert('Please choose a client.'); return; }
+  if (!lines.length) { alert('Add at least one line.'); return; }
+  const number = $('iNum').value.trim();
+  if (!number) { alert('Please enter the invoice number.'); return; }
+  if (S.invoices.some(f => f.data.number === number && (!editInv || f.id !== editInv.id))) { alert('An invoice with that number already exists.'); return; }
+  const { demo: _d, ...issuer } = co();
+  const { demo: _c, ...client } = c.data;
+  const data = {
+    number, date: $('iDate').value, due: $('iDue').value, status: $('iStatus').value, notes: $('iNotes').value,
+    clientId: c.id, client, issuer,
+    lines: lines.map(l => ({ desc: l.desc, qty: num(l.qty), price: num(l.price), vat: num(l.vat) }))
+  };
+  if (editInv) { if (editInv.data.demo) data.demo = true; await C.invoices.update(editInv.id, data, { version: editInv.version }); }
+  else await C.invoices.add(data, { idempotencyKey: 'invoice:' + number });
+  await loadAll(); show('invoices');
+});
+
+/* ---------- PDF ---------- */
+function pdf(d) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const e = d.issuer && d.issuer.name ? d.issuer : co();
+  const cl = d.client || {};
+  const W = 210, M = 15;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(31, 79, 209);
+  doc.text('INVOICE', M, 22);
+  doc.setFontSize(10); doc.setTextColor(60);
+  doc.setFont('helvetica', 'normal');
+  doc.text([`No.: ${d.number}`, `Date: ${fdate(d.date)}`].concat(d.due ? [`Due: ${fdate(d.due)}`] : []), W - M, 16, { align: 'right' });
+  doc.setDrawColor(220); doc.line(M, 30, W - M, 30);
+  const block = (title, o, x) => {
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(120); doc.setFontSize(9); doc.text(title, x, 38);
+    doc.setTextColor(30); doc.setFontSize(11); doc.text(o.name || '—', x, 44);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(70);
+    const ls = [o.tax && 'EIN: ' + o.tax, o.addr, o.email, o.phone].filter(Boolean).flatMap(s => doc.splitTextToSize(s, 80));
+    doc.text(ls, x, 50);
+  };
+  block('FROM', e, M); block('BILL TO', cl, 110);
+  const t = totals(d.lines || []);
+  doc.autoTable({
+    startY: 78, margin: { left: M, right: M },
+    head: [['Description', 'Qty', 'Price', 'Tax', 'Amount']],
+    body: (d.lines || []).map(l => [l.desc, String(l.qty), money(l.price), l.vat + ' %', money(l.qty * l.price)]),
+    styles: { fontSize: 9.5, cellPadding: 2.5 },
+    headStyles: { fillColor: [31, 79, 209] },
+    columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } }
+  });
+  let y = doc.lastAutoTable.finalY + 8;
+  doc.setFontSize(10); doc.setTextColor(60);
+  doc.text('Subtotal', 140, y); doc.text(money(t.base), W - M, y, { align: 'right' });
+  y += 6; doc.text('Sales tax', 140, y); doc.text(money(t.vat), W - M, y, { align: 'right' });
+  y += 8; doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(20);
+  doc.text('TOTAL', 140, y); doc.text(money(t.total), W - M, y, { align: 'right' });
+  if (d.notes) {
+    y += 14; doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(80);
+    doc.text(doc.splitTextToSize(d.notes, W - 2 * M), M, y);
+  }
+  doc.save(`Invoice_${(d.number || '').replace(/[^\w-]+/g, '_')}.pdf`);
+}
+
+/* ---------- session ---------- */
+$('logout').addEventListener('click', async () => { await db.logout(); location.reload(); });
+
+(async function start() {
+  try {
+    await db.ready();
+    $('status').textContent = 'Connected';
+    if (db.getRole() === 'owner') $('inviteRow').style.display = 'flex';
+    await loadAll();
+    if (!S.settings && !S.clients.length && !S.products.length && !S.invoices.length) {
+      $('status').textContent = 'Loading sample data…';
+      await seedDemo('first');
+      await loadAll();
+      $('status').textContent = 'Connected';
+    }
+  } catch (e) {
+    $('status').textContent = 'Not connected';
+    showErr(e);
+  }
+})();
+</script>
+</body>
+</html>

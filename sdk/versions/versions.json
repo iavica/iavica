@@ -1,0 +1,25 @@
+{
+  "versions": [
+    {
+      "version": "1.2.0",
+      "date": "2026-11-21",
+      "url": "https://iavica.com/sdk/1.2.0/iavica.js",
+      "integrity": "sha384-C2aP734+fJ3oFWgYRS7EcJQSDd4NXOw74rgEc2k7l6BblWsdOL2H1cSjprGN/y+E"
+    },
+    {
+      "version": "1.1.0",
+      "date": "2026-11-20",
+      "url": "https://iavica.com/sdk/1.1.0/iavica.js",
+      "integrity": "sha384-EtA4dkaqI0lR2Lyws7/xbEMx5DDnGzauUgzjEpsh6wSLJLL2udXRMzRj33iHOeXw"
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-11-20",
+      "url": "https://iavica.com/sdk/1.0.0/iavica.js",
+      "integrity": "sha384-7ihi5lxvLO9IVboFjCwJQXhsZHPE3Wh9WrKVHiMKJWRk+SSMilkjWLskWxpFIoJ6"
+    }
+  ],
+  "latest": {
+    "v1": "1.2.0"
+  }
+}
