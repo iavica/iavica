@@ -24,14 +24,6 @@ Build my app using iavica. Follow https://iavica.com/ai to connect secure storag
 When it's ready, explain the next steps to me with the messages from that page.
 ```
 
-Original wording, in Spanish, for the first paragraph:
-
-```text
-Hazme una pequeña aplicación para hacer facturas, en inglés, en dólares y adaptada a Estados Unidos. Que
-pueda meter mis clientes, mis productos y pueda hacer facturas. Que tenga mi listado de facturas y pueda
-exportarlas en PDF. Que esté adaptado para poder usarlo en móvil. Que tenga datos de ejemplo precargados.
-```
-
 Claude Code wrote the file, asked iavica for the address `my-invoices`, and the owner approved the
 publication from an email. A few follow-up requests in the same conversation improved the mobile layout
 and the sample data.

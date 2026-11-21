@@ -1,6 +1,6 @@
-# iavica
+<h1 align="center"><a href="https://iavica.com"><img src="assets/logo.svg" alt="iavica" width="260"></a></h1>
 
-**Your AI builds it and iavica makes it real.**
+<p align="center"><strong>Your AI builds it and iavica makes it real.</strong></p>
 
 Ask any AI assistant (Claude, ChatGPT, Gemini…) for a small app, and it gives you a single HTML file.
 [iavica](https://iavica.com) gives that file what it is missing to be a real app:
