@@ -13,7 +13,7 @@ visitor confirms their email and gets their own space with sample data. Nobody s
 
 ## The prompt
 
-It was built by **Claude Code** from this prompt (it was written in Spanish; this is the translation):
+It was built by **Claude Code** from this prompt:
 
 ```text
 Make me a small invoicing app, in English, in US dollars and adapted to the United States. I want to add
