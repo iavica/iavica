@@ -20,7 +20,7 @@ The user is usually not technical. iavica decides what you tell them:
 
 Message when you deliver the app:
 - EN: "Your app is ready. 1. Save this file as {file-name}.html and open it. 2. The first time, it will ask for your email. You will get an email from iavica: press Approve. From then on, your data saves by itself. 3. Want it on your phone? Go to iavica.com/account with the same email and drag the file there. You will get an address like {name}.iavica.app."
-- ES: "Tu app está lista. 1. Guarda este archivo como {nombre-archivo}.html y ábrelo. 2. La primera vez te pedirá tu email. Te llegará un correo de iavica: pulsa Approve. Desde ese momento tus datos se guardan solos. 3. ¿La quieres en el móvil? Entra en iavica.com/account con el mismo email y arrastra el archivo. Tendrás una dirección como {nombre}.iavica.app."
+- ES: "Tu app está lista. 1. Guarda este archivo como {nombre-archivo}.html y ábrelo. 2. La primera vez te pedirá tu email. Te llegará un correo de iavica: pulsa Aprobar (Approve). Desde ese momento tus datos se guardan solos. 3. ¿La quieres en el móvil? Entra en iavica.com/account con el mismo email y arrastra el archivo. Tendrás una dirección como {nombre}.iavica.app."
 
 Message when you deliver a new version:
 - EN: "I've improved the app. Replace the previous file with this one; your data is still there. If it is already online, drag it again into iavica.com/account."
@@ -29,7 +29,7 @@ Message when you deliver a new version:
 Messages when you can publish it yourself (Path A):
 - Before, EN: "Do you want me to put it online so you can use it from anywhere? Choose an address: {a}, {b} or {c}. Private (only you and the people you invite) or public (anyone with the link can use it, with their own data)?"
 - Before, ES: "¿Quieres que la ponga en internet para usarla desde cualquier sitio? Elige una dirección: {a}, {b} o {c}. ¿Privada (solo tú y quien invites) o pública (cualquiera con el enlace puede usarla, con sus propios datos)?"
-- After asking for permission, EN: "I've sent you an email from iavica: press Approve." ES: "Te he enviado un correo de iavica: pulsa Approve."
+- After asking for permission, EN: "I've sent you an email from iavica: press Approve." ES: "Te he enviado un correo de iavica: pulsa Aprobar (Approve)."
 - Online, EN: "Ready: https://{name}.iavica.app (private | public)." ES: "Lista: https://{nombre}.iavica.app (privada | pública)."
 
 ## Start here
